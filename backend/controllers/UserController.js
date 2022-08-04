@@ -45,11 +45,15 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Invalid email or password", 401));
   }
 
-  const isPasswordMatched = user.comparePassword(password);
-
-  if (!isPasswordMatched) {
-    return next(new ErrorHandler("Invalid email or password", 401));
+  if (password !== user.password) {
+    return next(new ErrorHandler("Please Enter a Valid Password", 400));
   }
+
+  // const isPasswordMatched = user.comparePassword(password);
+
+  // if (!isPasswordMatched) {
+  //   return next(new ErrorHandler("Invalid email or password", 401));
+  // }
 
   sendToken(user, 200, res);
 });
@@ -246,9 +250,7 @@ exports.updateUserRole = catchAsyncErrors(async (req, res, next) => {
     role: req.body.role,
   };
 
-  // We will add cloudinary later
-
-  const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
+  await User.findByIdAndUpdate(req.params.id, newUserData, {
     new: true,
     runValidators: true,
     useFindAndModify: false,
@@ -256,7 +258,6 @@ exports.updateUserRole = catchAsyncErrors(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    user,
   });
 });
 
@@ -270,12 +271,14 @@ exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  await user.remove();
+  const imageId = user.avatar.public_id;
 
-  // We will remove cloudinary later
+  await cloudinary.v2.uploader.destroy(imageId);
+
+  await user.remove();
 
   res.status(200).json({
     success: true,
-    user,
+    message: "User Deleted Successfully",
   });
 });
